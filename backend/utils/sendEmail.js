@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-const sendEmail = async (email_to, email_subj, email_html) => {
+const sendEmail = async (email_to, email_subj, email_html, email_replyTo) => {
   const transport = nodemailer.createTransport(
     {
       host: process.env.EMAIL_HOST,
@@ -20,6 +20,7 @@ const sendEmail = async (email_to, email_subj, email_html) => {
     to: email_to,
     subject: email_subj,
     html: email_html,
+    replyTo: email_replyTo,
   };
   transport.sendMail(option, function (err, info) {
     if (err) {
