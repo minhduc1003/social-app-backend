@@ -30,7 +30,7 @@ const userRegister = asyncHandler(async (req, res) => {
   const token = genrateToken(user._id);
   if (user) {
     res.status(201);
-    const { name, email, photo, bio, phone } = user;
+    const { name, email, photo, bio, phone, permission } = user;
     res.cookie("token", token, {
       path: "/",
       httpOnly: true,
@@ -44,6 +44,7 @@ const userRegister = asyncHandler(async (req, res) => {
       photo,
       bio,
       phone,
+      permission,
       token,
     });
   } else {
@@ -68,13 +69,14 @@ const userLogin = asyncHandler(async (req, res) => {
   });
   const passwordIsCorrect = await bcrypt.compare(password, user.password);
   if (user && passwordIsCorrect) {
-    const { name, email, photo, bio, phone } = user;
+    const { name, email, photo, bio, phone, permission } = user;
     res.json({
       name,
       email,
       photo,
       bio,
       phone,
+      permission,
       token,
     });
   } else {
@@ -96,13 +98,14 @@ const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (user) {
     res.status(201);
-    const { name, email, photo, bio, phone } = user;
+    const { name, email, photo, bio, phone, permission } = user;
     res.json({
       name,
       email,
       photo,
       bio,
       phone,
+      permission,
     });
   } else {
     res.status(500);
@@ -126,7 +129,7 @@ const updateUser = asyncHandler(async (req, res) => {
   (user.photo = req.body.photo || user.photo),
     (user.bio = req.body.bio || user.bio);
   user.phone = req.body.phone || user.phone;
-  const { _id, name, email, photo, bio, phone } = user;
+  const { _id, name, email, photo, bio, phone, permission } = user;
 
   await User.findByIdAndUpdate(_id, req.user, {
     new: true,
@@ -139,6 +142,7 @@ const updateUser = asyncHandler(async (req, res) => {
         photo,
         bio,
         phone,
+        permission,
       })
     )
     .catch((e) => {

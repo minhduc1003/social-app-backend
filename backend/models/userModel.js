@@ -34,6 +34,10 @@ const userSchema = mongoose.Schema(
       default: "",
       maxLength: [250, "please fill not more than 250 characters"],
     },
+    permission: {
+      type: String,
+      default: process.env.USER_PERMISSION,
+    },
   },
   {
     timestamps: true,

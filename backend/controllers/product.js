@@ -61,9 +61,11 @@ const getAllProduct = asyncHandler(async (req, res) => {
 const getSingleProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const product = await Product.findOne({ _id: id });
-  if (product.user != req.user._id) {
-    res.status(404);
-    throw new Error("you can't get this product");
+  if (req.user.permission !== process.env.ADMIN_PERMISSION) {
+    if (!product.user.equals(req.user._id)) {
+      res.status(404);
+      throw new Error("you can't get this product");
+    }
   }
   if (product) {
     res.status(200).json(product);
@@ -76,10 +78,11 @@ const deleteProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const product = await Product.findOne({ _id: id });
-
-  if (product.user != req.user._id) {
-    res.status(404);
-    throw new Error("you can't delete this product");
+  if (req.user.permission !== process.env.ADMIN_PERMISSION) {
+    if (!product.user.equals(req.user._id)) {
+      res.status(404);
+      throw new Error("you can't get this product");
+    }
   }
   if (product) {
     await Product.findOneAndDelete({ _id: id });
@@ -94,10 +97,14 @@ const updateProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   let fileData = {};
   const product = await Product.findOne({ _id: id });
-  if (product.user != req.user._id) {
-    res.status(404);
-    throw new Error("you can't update this product");
+
+  if (req.user.permission != process.env.ADMIN_PERMISSION) {
+    if (!product.user.equals(req.user._id)) {
+      res.status(404);
+      throw new Error("you can't get this product");
+    }
   }
+
   if (req.file) {
     let upload;
     try {
