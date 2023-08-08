@@ -14,7 +14,13 @@ app.use(express.json());
 app.use(cookieParser());
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use(express.urlencoded({ extended: false }));
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true, //access-control-allow-credentials:true
+    optionSuccessStatus: 200,
+  })
+);
 app.use(bodyParser.json());
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);

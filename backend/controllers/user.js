@@ -16,9 +16,13 @@ const userRegister = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("please fill a form");
   }
-  if (password < 6) {
+  if (password.length < 6) {
     res.status(400);
     throw new Error("password must be up to 6 character");
+  }
+  if (!email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
+    res.status(400);
+    throw new Error("please write correct email format");
   }
 
   const emailExist = await User.findOne({ email });
@@ -33,10 +37,10 @@ const userRegister = asyncHandler(async (req, res) => {
     const { name, email, photo, bio, phone, permission } = user;
     res.cookie("token", token, {
       path: "/",
-      httpOnly: true,
+      httpOnly: false,
       expires: new Date(Date.now() + 1000 * 86400),
       sameSite: "none",
-      secure: true,
+      secure: false,
     });
     res.json({
       name,
@@ -58,14 +62,27 @@ const userLogin = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("please fill a form");
   }
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error("password must be up to 6 character");
+  }
+  if (!email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
+    res.status(400);
+    throw new Error("please write correct email format");
+  }
+
   const user = await User.findOne({ email });
+  if (!user) {
+    res.status(404);
+    throw new Error("user not found");
+  }
   const token = genrateToken(user._id);
   res.cookie("token", token, {
     path: "/",
-    httpOnly: true,
+    httpOnly: false,
     expires: new Date(Date.now() + 1000 * 86400),
     sameSite: "none",
-    secure: true,
+    secure: false,
   });
   const passwordIsCorrect = await bcrypt.compare(password, user.password);
   if (user && passwordIsCorrect) {
@@ -81,21 +98,22 @@ const userLogin = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(400);
-    throw new Error("wrong email or password");
+    throw new Error("wrong password");
   }
 });
 const userLogout = asyncHandler(async (req, res) => {
   res.cookie("token", "", {
     path: "/",
-    httpOnly: true,
+    httpOnly: false,
     expires: new Date(0),
     sameSite: "none",
-    secure: true,
+    secure: false,
   });
   return res.status(200).json({ message: "logout successfuly" });
 });
 const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
+  console.log(user);
   if (user) {
     res.status(201);
     const { name, email, photo, bio, phone, permission } = user;
@@ -174,10 +192,11 @@ const sendTokenWhenForgotPass = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("please add email to the field");
   }
-  const user = await User.findOne({ email }).catch(() => {
+  const user = await User.findOne({ email });
+  if (!user) {
     res.status(500);
-    throw new Error("error");
-  });
+    throw new Error("email not exist");
+  }
   // console.log(user._id);
   await Token.findOneAndDelete({ userId: user._id });
   let resetToken = crypto.randomBytes(32).toString("hex") + user._id;
@@ -195,6 +214,7 @@ const sendTokenWhenForgotPass = asyncHandler(async (req, res) => {
       throw new Error("error");
     });
   const url = `${process.env.URL_RPASSWORD}/${resetToken}`;
+  console.log(url);
   const subj = "RESET EMAIL";
   const message = `<h1>Reset password</h1>
       <br/>
@@ -210,7 +230,7 @@ const sendTokenWhenForgotPass = asyncHandler(async (req, res) => {
   res.send("reset password");
 });
 const changePasswordWhenForgotPass = asyncHandler(async (req, res) => {
-  const { password } = req.body;
+  const { password, oldPassword } = req.body;
   const { resetToken } = req.params;
   let token = crypto.createHash("sha256").update(resetToken).digest("hex");
   const tokenDb = await Token.findOne({
@@ -227,11 +247,17 @@ const changePasswordWhenForgotPass = asyncHandler(async (req, res) => {
     res.status(500);
     throw new Error("error");
   }
-  user.password = password;
-  await user.save();
-  tokenDb.token = "";
-  await tokenDb.save();
-  res.status(200).json({ message: "change password successfully" });
+  const verify = await bcrypt.compare(oldPassword, user.password);
+  if (verify) {
+    user.password = password;
+    await user.save();
+    tokenDb.token = "";
+    await tokenDb.save();
+    res.status(200).json({ message: "change password successfully" });
+  } else {
+    res.status(400);
+    throw new Error("enter correct your old password");
+  }
 });
 module.exports = {
   userRegister,
