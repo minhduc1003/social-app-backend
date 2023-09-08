@@ -21,12 +21,32 @@ const userSchema = mongoose.Schema(
       required: [true, "require"],
       minLength: [6, "please fill up to 6 characters"],
     },
+    profilePicture: {
+      type: String,
+      default: "",
+    },
     photo: {
       type: String,
       default: "https://www.catholicjonesboro.com/files/images/sample-img.jpg",
     },
+    followers: {
+      type: Array,
+      default: [],
+    },
+    followings: {
+      type: Array,
+      default: [],
+    },
     phone: {
       type: Number,
+      default: "",
+    },
+    gender: {
+      type: String,
+      default: "",
+    },
+    dayOfBirth: {
+      type: Date,
       default: "",
     },
     bio: {

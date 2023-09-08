@@ -116,7 +116,19 @@ const getUser = asyncHandler(async (req, res) => {
   console.log(user);
   if (user) {
     res.status(201);
-    const { name, email, photo, bio, phone, permission } = user;
+    const {
+      name,
+      email,
+      photo,
+      bio,
+      phone,
+      permission,
+      profilePicture,
+      followers,
+      followings,
+      gender,
+      dayOfBirth,
+    } = user;
     res.json({
       name,
       email,
@@ -124,13 +136,52 @@ const getUser = asyncHandler(async (req, res) => {
       bio,
       phone,
       permission,
+      profilePicture,
+      followers,
+      followings,
+      gender,
+      dayOfBirth,
     });
   } else {
     res.status(500);
     throw new Error("error");
   }
 });
-
+const getAnotherUser = asyncHandler(async (req, res) => {
+  const user = await User.findById({ _id: req.params.id });
+  if (user) {
+    res.status(201);
+    const {
+      name,
+      email,
+      photo,
+      bio,
+      phone,
+      permission,
+      profilePicture,
+      followers,
+      followings,
+      gender,
+      dayOfBirth,
+    } = user;
+    res.json({
+      name,
+      email,
+      photo,
+      bio,
+      phone,
+      permission,
+      profilePicture,
+      followers,
+      followings,
+      gender,
+      dayOfBirth,
+    });
+  } else {
+    res.status(500);
+    throw new Error("error");
+  }
+});
 const loginStatus = (req, res) => {
   const token = req.cookies.token;
   if (!token) res.status(400).json(false);
@@ -259,6 +310,50 @@ const changePasswordWhenForgotPass = asyncHandler(async (req, res) => {
     throw new Error("enter correct your old password");
   }
 });
+const followUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { _id } = req.user;
+  const user = await User.findOne({ _id: id });
+  const currentUser = await User.findOne({ _id });
+  if (id == _id) {
+    if (!user.followers.includes(_id)) {
+      try {
+        await User.updateOne({ $push: { followers: _id } });
+        await currentUser.updateOne({ $push: { followings: id } });
+        res.status(200).send("Successfully following");
+      } catch (error) {
+        res.status(500);
+        throw new Error("network error: ");
+      }
+    } else {
+      res.status(403).send("you already follow this user");
+    }
+  } else {
+    res.status(403).send("you cant follow your self");
+  }
+});
+const unFollowUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { _id } = req.user;
+  const user = await User.findOne({ _id: id });
+  const currentUser = await User.findOne({ _id });
+  if (id == _id) {
+    if (user.followers.includes(_id)) {
+      try {
+        await User.deleteOne({ $pull: { followers: _id } });
+        await currentUser.deleteOne({ $pull: { followings: id } });
+        res.status(200).send("Successfully Unfollowing");
+      } catch (error) {
+        res.status(500);
+        throw new Error("network error: ");
+      }
+    } else {
+      res.status(403).send("you dont follow this user");
+    }
+  } else {
+    res.status(403).send("you cant Unfollow your self");
+  }
+});
 module.exports = {
   userRegister,
   userLogin,
@@ -269,4 +364,7 @@ module.exports = {
   changePassword,
   sendTokenWhenForgotPass,
   changePasswordWhenForgotPass,
+  followUser,
+  getAnotherUser,
+  unFollowUser,
 };
