@@ -1,15 +1,16 @@
 const asyncHandler = require("express-async-handler");
 const Post = require("../models/postModel");
+const Image = require("../models/imageModel");
 const { fileSizeFormat } = require("../utils/uploadFile");
 const cloudinary = require("cloudinary").v2;
+
 cloudinary.config({
   cloud_name: "dbsywoofn",
   api_key: "299752882974997",
   api_secret: "h4s4gk1xCMBh21pa55F-3sLAXR8",
 });
-const postUpload = asyncHandler(async (req, res) => {
+const postImage = asyncHandler(async (req, res) => {
   try {
-    const { text } = req.body;
     let fileData = {};
     if (req.file) {
       let upload;
@@ -29,7 +30,23 @@ const postUpload = asyncHandler(async (req, res) => {
         throw new Error("upload image error");
       }
     }
-    await Post.create({ text, image: fileData, userId: req.user._id });
+    const image = await Image.create({ image: fileData, userId: req.user._id });
+    res.status(200).json({
+      imageId: image._id,
+    });
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
+
+const postUpload = asyncHandler(async (req, res) => {
+  try {
+    const { text } = req.body;
+    const { id } = req.params;
+    const image = id && (await Image.findById(id));
+    console.log(image);
+    await Post.create({ text, image: image.image, userId: req.user._id });
     res.status(200).send("Successfully posted!");
   } catch (error) {
     res.status(500);
@@ -75,4 +92,5 @@ module.exports = {
   postDelete,
   getPost,
   likePost,
+  postImage,
 };

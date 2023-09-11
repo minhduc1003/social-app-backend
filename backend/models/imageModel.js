@@ -1,15 +1,10 @@
 const mongoose = require("mongoose");
 
-const PostSchema = new mongoose.Schema(
+const ImageSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
       required: true,
-    },
-    text: {
-      type: String,
-      max: 500,
-      default: "",
     },
     image: {
       fileName: String,
@@ -18,12 +13,8 @@ const PostSchema = new mongoose.Schema(
       size: String,
       default: {},
     },
-    likes: {
-      type: Array,
-      default: [],
-    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Post", PostSchema);
+module.exports = mongoose.model("Image", ImageSchema);
