@@ -45,8 +45,11 @@ const postUpload = asyncHandler(async (req, res) => {
     const { text } = req.body;
     const { id } = req.params;
     const image = id && (await Image.findById(id));
-    console.log(image);
-    await Post.create({ text, image: image.image, userId: req.user._id });
+    if (id) {
+      await Post.create({ text, image: image.image, userId: req.user._id });
+    } else {
+      await Post.create({ text, userId: req.user._id });
+    }
     res.status(200).send("Successfully posted!");
   } catch (error) {
     res.status(500);
@@ -58,6 +61,17 @@ const postDelete = asyncHandler(async (req, res) => {
     const { id } = req.params;
     await Post.findOneAndDelete({ _id: id });
     res.status(200).send("Successfully deleted!");
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
+const getDashboardPost = asyncHandler(async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const data = await Post.find({ userId: _id });
+    console.log(data);
+    res.status(200).json(data);
   } catch (error) {
     res.status(500);
     throw new Error("network error");
@@ -93,4 +107,5 @@ module.exports = {
   getPost,
   likePost,
   postImage,
+  getDashboardPost,
 };
