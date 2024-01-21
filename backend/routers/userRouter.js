@@ -12,6 +12,9 @@ const {
   followUser,
   unFollowUser,
   getAnotherUser,
+  searchUser,
+  unAcceptNewFriend,
+  acceptNewFriend,
 } = require("../controllers/user");
 const protect = require("../middleWare/authMiddleWare");
 const router = express.Router();
@@ -25,6 +28,9 @@ router.patch("/updateuser", protect, updateUser);
 router.patch("/changepassword", protect, changePassword);
 router.post("/forgotpassword", sendTokenWhenForgotPass);
 router.put("/forgotpassword/:resetToken", changePasswordWhenForgotPass);
-router.put("/:id/follow", protect, followUser);
-router.put("/:id/unfollow", protect, unFollowUser);
+router.get("/follow:id/", protect, followUser);
+router.get("/unFollow/:id", protect, unFollowUser);
+router.get("/search",protect,searchUser);
+router.get("/accept/:id", protect, acceptNewFriend);
+router.get("/unAccept/:id", protect, unAcceptNewFriend);
 module.exports = router;

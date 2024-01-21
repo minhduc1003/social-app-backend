@@ -3,7 +3,6 @@ const Post = require("../models/postModel");
 const Image = require("../models/imageModel");
 const { fileSizeFormat } = require("../utils/uploadFile");
 const cloudinary = require("cloudinary").v2;
-
 cloudinary.config({
   cloud_name: "dbsywoofn",
   api_key: "299752882974997",
@@ -70,7 +69,6 @@ const getDashboardPost = asyncHandler(async (req, res) => {
   try {
     const { _id } = req.user;
     const data = await Post.find({ userId: _id });
-    console.log(data);
     res.status(200).json(data);
   } catch (error) {
     res.status(500);

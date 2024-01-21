@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const Token = require("../models/tokenModel");
 const sendEmail = require("../utils/sendEmail");
+const mongoose = require('mongoose');
 const genrateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRETOKEN, {
     expiresIn: "1d",
@@ -113,7 +114,6 @@ const userLogout = asyncHandler(async (req, res) => {
 });
 const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
-  console.log(user);
   if (user) {
     res.status(201);
     const {
@@ -125,8 +125,8 @@ const getUser = asyncHandler(async (req, res) => {
       phone,
       permission,
       profilePicture,
-      followers,
-      followings,
+      notification,
+      friend,
       gender,
       dayOfBirth,
     } = user;
@@ -139,8 +139,8 @@ const getUser = asyncHandler(async (req, res) => {
       phone,
       permission,
       profilePicture,
-      followers,
-      followings,
+      notification,
+      friend,
       gender,
       dayOfBirth,
     });
@@ -161,12 +161,14 @@ const getAnotherUser = asyncHandler(async (req, res) => {
       phone,
       permission,
       profilePicture,
-      followers,
-      followings,
+      notification,
+      friend,
       gender,
       dayOfBirth,
+      _id
     } = user;
     res.json({
+      _id,
       name,
       email,
       photo,
@@ -174,8 +176,8 @@ const getAnotherUser = asyncHandler(async (req, res) => {
       phone,
       permission,
       profilePicture,
-      followers,
-      followings,
+      notification,
+      friend,
       gender,
       dayOfBirth,
     });
@@ -250,11 +252,9 @@ const sendTokenWhenForgotPass = asyncHandler(async (req, res) => {
     res.status(500);
     throw new Error("email not exist");
   }
-  // console.log(user._id);
   await Token.findOneAndDelete({ userId: user._id });
   let resetToken = crypto.randomBytes(32).toString("hex") + user._id;
   let token = crypto.createHash("sha256").update(resetToken).digest("hex");
-  console.log(resetToken);
   await new Token({
     userId: user._id,
     token: token,
@@ -267,7 +267,6 @@ const sendTokenWhenForgotPass = asyncHandler(async (req, res) => {
       throw new Error("error");
     });
   const url = `${process.env.URL_RPASSWORD}/${resetToken}`;
-  console.log(url);
   const subj = "RESET EMAIL";
   const message = `<h1>Reset password</h1>
       <br/>
@@ -316,15 +315,59 @@ const followUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { _id } = req.user;
   const user = await User.findOne({ _id: id });
-  const currentUser = await User.findOne({ _id });
-  if (id == _id) {
-    if (!user.followers.includes(_id)) {
+  if (id !== _id) {
+    if (!user.friend.includes(_id)) {
       try {
-        await User.updateOne({ $push: { followers: _id } });
-        await currentUser.updateOne({ $push: { followings: id } });
+        await user.updateOne({ $push: { notification: {
+          name:"add friend",
+          userId:_id.toString(),
+          createdAt:Date.now()
+        } } });       
         res.status(200).send("Successfully following");
       } catch (error) {
         res.status(500);
+        throw new Error("network error: ");
+      }
+    } else {
+      res.status(403).send("you already follow this user");
+    }
+  } else {
+    res.status(403).send("you cant follow your self");
+  }
+});
+const unAcceptNewFriend = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { _id } = req.user;
+  const userId = _id.toString()
+  const currentUser = await User.findOne({ _id });
+  
+    if (currentUser.notification.includes(userId)) {
+      try {
+        await currentUser.updateOne({ $pull: { notification: {userId:id} } });
+        res.status(200).send("Successfully following");
+      } catch (error) {
+        res.status(500);
+        throw new Error("network error: ");
+      }
+    } else {
+      res.status(403).send("you already follow this user");
+    }
+});
+const acceptNewFriend = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { _id } = req.user;
+  const user = await User.findOne({ _id: id });
+  const currentUser = await User.findOne({ _id });
+  const userId = _id.toString()
+  if (id !== userId) {
+    if (!user.friend.includes(userId)) {
+      try {
+        await user.updateOne({ $push: { friend: userId } });
+        await currentUser.updateOne({ $push: { friend: id } });
+        await currentUser.updateOne({ $pull: { notification: {userId:id} } });
+        res.status(200).send("Successfully following");
+      } catch (error) {
+        res.status(500);  
         throw new Error("network error: ");
       }
     } else {
@@ -339,11 +382,12 @@ const unFollowUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const user = await User.findOne({ _id: id });
   const currentUser = await User.findOne({ _id });
-  if (id == _id) {
-    if (user.followers.includes(_id)) {
+  const userId = _id.toString()
+  if (id !== userId) {
+    if (user.friend.includes(userId)) {
       try {
-        await User.deleteOne({ $pull: { followers: _id } });
-        await currentUser.deleteOne({ $pull: { followings: id } });
+        await user.updateOne({ $pull: { friend: userId } });
+        await currentUser.updateOne({ $pull: { friend: id } });
         res.status(200).send("Successfully Unfollowing");
       } catch (error) {
         res.status(500);
@@ -356,6 +400,23 @@ const unFollowUser = asyncHandler(async (req, res) => {
     res.status(403).send("you cant Unfollow your self");
   }
 });
+const searchUser = asyncHandler(async (req, res) => {
+  const { name } = req.query;
+  const currentUser = await User.findOne({_id:req.user._id})
+  if(name!==""){
+    const users = await User.find({$and:[
+      { name: { $regex: name, $options: "i" }},
+       {_id:{$ne: currentUser}}
+    ]});
+if (users.length>0){
+  res.status(200).json(users);
+}else{
+  res.status(200).json([]);
+}
+  }else{
+    res.status(200).json([]);
+  }
+})
 module.exports = {
   userRegister,
   userLogin,
@@ -369,4 +430,7 @@ module.exports = {
   followUser,
   getAnotherUser,
   unFollowUser,
+  searchUser,
+  unAcceptNewFriend,
+  acceptNewFriend
 };

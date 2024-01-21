@@ -29,11 +29,7 @@ const userSchema = mongoose.Schema(
       type: String,
       default: "https://www.catholicjonesboro.com/files/images/sample-img.jpg",
     },
-    followers: {
-      type: Array,
-      default: [],
-    },
-    followings: {
+    friend:{
       type: Array,
       default: [],
     },
@@ -58,6 +54,10 @@ const userSchema = mongoose.Schema(
       type: String,
       default: process.env.USER_PERMISSION,
     },
+    notification:{
+      type:Array,
+      default:[]
+    }
   },
   {
     timestamps: true,
