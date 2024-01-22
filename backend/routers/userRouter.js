@@ -28,7 +28,7 @@ router.patch("/updateuser", protect, updateUser);
 router.patch("/changepassword", protect, changePassword);
 router.post("/forgotpassword", sendTokenWhenForgotPass);
 router.put("/forgotpassword/:resetToken", changePasswordWhenForgotPass);
-router.get("/follow:id/", protect, followUser);
+router.get("/follow/:id", protect, followUser);
 router.get("/unFollow/:id", protect, unFollowUser);
 router.get("/search",protect,searchUser);
 router.get("/accept/:id", protect, acceptNewFriend);

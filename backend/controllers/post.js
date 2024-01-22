@@ -78,8 +78,8 @@ const getDashboardPost = asyncHandler(async (req, res) => {
 const getPost = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    await Post.find({ userId: id });
-    res.status(200);
+    const data = await Post.find({ userId: id });
+    res.status(200).json(data);
   } catch (error) {
     res.status(500);
     throw new Error("network error");

@@ -315,14 +315,26 @@ const followUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { _id } = req.user;
   const user = await User.findOne({ _id: id });
+  const currentUser = await User.findOne({ _id });
+  const io = res.io;
+  const currentId = _id.toString();
   if (id !== _id) {
-    if (!user.friend.includes(_id)) {
+    if (!user.friend.some(user => user.userId===currentId)) {
       try {
+        await currentUser.updateOne({ $push: { friend: {
+          name:currentUser.name,
+          image:currentUser.photo,
+          userId:id,
+          status:"Pending"
+        } } });
         await user.updateOne({ $push: { notification: {
-          name:"add friend",
+          des:"add friend",
+          name: user.name,
+          image: user.photo,
           userId:_id.toString(),
           createdAt:Date.now()
-        } } });       
+        } } });  
+        io.emit("sent_notification")     
         res.status(200).send("Successfully following");
       } catch (error) {
         res.status(500);
@@ -341,7 +353,6 @@ const unAcceptNewFriend = asyncHandler(async (req, res) => {
   const userId = _id.toString()
   const currentUser = await User.findOne({ _id });
   
-    if (currentUser.notification.includes(userId)) {
       try {
         await currentUser.updateOne({ $pull: { notification: {userId:id} } });
         res.status(200).send("Successfully following");
@@ -349,9 +360,7 @@ const unAcceptNewFriend = asyncHandler(async (req, res) => {
         res.status(500);
         throw new Error("network error: ");
       }
-    } else {
-      res.status(403).send("you already follow this user");
-    }
+    
 });
 const acceptNewFriend = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -359,11 +368,24 @@ const acceptNewFriend = asyncHandler(async (req, res) => {
   const user = await User.findOne({ _id: id });
   const currentUser = await User.findOne({ _id });
   const userId = _id.toString()
+  io= res.io;
   if (id !== userId) {
-    if (!user.friend.includes(userId)) {
+    if (user.friend.some(user => user.userId===userId)) {
       try {
-        await user.updateOne({ $push: { friend: userId } });
-        await currentUser.updateOne({ $push: { friend: id } });
+        await user.updateOne({ $pull: { friend: {status:"Pending"} } });
+        await user.updateOne({ $push: { friend: {
+          name:currentUser.name,
+          image:currentUser.photo,
+          userId:userId,
+          status:"Accepted"
+        } } });
+        await currentUser.updateOne({ $push: { friend: {
+          name:user.name,
+          image:user.photo,
+          userId:id,
+          status:"Accepted"
+        }  } });
+        io.emit("sent_Accepted")
         await currentUser.updateOne({ $pull: { notification: {userId:id} } });
         res.status(200).send("Successfully following");
       } catch (error) {
@@ -384,10 +406,10 @@ const unFollowUser = asyncHandler(async (req, res) => {
   const currentUser = await User.findOne({ _id });
   const userId = _id.toString()
   if (id !== userId) {
-    if (user.friend.includes(userId)) {
+    if (user.friend.some(user => user.userId===userId)) {
       try {
-        await user.updateOne({ $pull: { friend: userId } });
-        await currentUser.updateOne({ $pull: { friend: id } });
+        await user.updateOne({ $pull: { friend: {userId:userId} } });
+        await currentUser.updateOne({ $pull: { friend: {userId:id} } });
         res.status(200).send("Successfully Unfollowing");
       } catch (error) {
         res.status(500);
