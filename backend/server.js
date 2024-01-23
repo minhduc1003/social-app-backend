@@ -8,6 +8,7 @@ const path = require("path");
 const userRouter = require("./routers/userRouter");
 const errorMidd = require("./middleWare/error");
 const postRouter = require("./routers/postRouter");
+const messageRouter = require("./routers/messageRouter");
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
@@ -15,13 +16,43 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // global._io = io;
+let users = [];
+
+const addUser = (userId, socketId) => {
+  !users.some((user) => user.userId === userId) &&
+    users.push({ userId, socketId });
+};
+
+const removeUser = (socketId) => {
+  users = users.filter((user) => user.socketId !== socketId);
+};
+
+const getUser = (userId) => {
+  return users.find((user) => user.userId === userId);
+  
+};
+
 io.on('connection', (socket) => {
-  console.log(`a user connected id: ${socket.id}`);
-  socket.on('send_message', (data) => {
-    socket.broadcast.emit('receive_message',data)
+  // console.log(`a user connected id: ${socket.id}`);
+  socket.on("addUser", (userId) => {
+    addUser(userId, socket.id);
+    io.emit("getUsers", users);
+  });
+
+  //send and get message
+  socket.on("send_message", ({ senderId, receiverId, text,conversationMember }) => {
+
+    const user = getUser(receiverId);
+    io.to(user.socketId).emit("getMessage", {
+      senderId,
+      text,
+      conversationMember
+    });
   });
   socket.on('disconnect', () => {
+    removeUser(socket.id);
     console.log('user disconnected');
+    io.emit("getUsers", users);
   });
 });
 app.use((req, res,next) => {
@@ -42,6 +73,7 @@ app.use(
 app.use(bodyParser.json());
 app.use("/api/user", userRouter);
 app.use("/api/post", postRouter);
+app.use("/api/message",messageRouter);
 
 const PORT = process.env.PORT || 5000;
 app.use(errorMidd);
