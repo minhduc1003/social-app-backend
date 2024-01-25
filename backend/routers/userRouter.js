@@ -15,8 +15,11 @@ const {
   searchUser,
   unAcceptNewFriend,
   acceptNewFriend,
+  postImageBackground,
+  postImagePhoto,
 } = require("../controllers/user");
 const protect = require("../middleWare/authMiddleWare");
+const { upload } = require("../utils/uploadFile");
 const router = express.Router();
 router.post("/register", userRegister);
 router.post("/login", userLogin);
@@ -33,4 +36,6 @@ router.get("/unFollow/:id", protect, unFollowUser);
 router.get("/search",protect,searchUser);
 router.get("/accept/:id", protect, acceptNewFriend);
 router.get("/unAccept/:id", protect, unAcceptNewFriend);
+router.post("/image/bg", protect, upload.single("image"), postImageBackground);
+router.post("/image/pt", protect, upload.single("image"), postImagePhoto);
 module.exports = router;

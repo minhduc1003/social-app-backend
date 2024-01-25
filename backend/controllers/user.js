@@ -6,6 +6,13 @@ const crypto = require("crypto");
 const Token = require("../models/tokenModel");
 const sendEmail = require("../utils/sendEmail");
 const mongoose = require('mongoose');
+const { fileSizeFormat } = require("../utils/uploadFile");
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: "dbsywoofn",
+  api_key: "299752882974997",
+  api_secret: "h4s4gk1xCMBh21pa55F-3sLAXR8",
+});
 const genrateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRETOKEN, {
     expiresIn: "1d",
@@ -439,6 +446,70 @@ if (users.length>0){
     res.status(200).json([]);
   }
 })
+const postImageBackground = asyncHandler(async (req, res) => {
+  try {
+    let fileData = {};
+    if (req.file) {
+      let upload;
+      try {
+        upload = await cloudinary.uploader.upload(req.file.path, {
+          resource_type: "image",
+          folder: "image",
+        });
+        fileData = {
+          fileName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          url: upload.secure_url,
+          size: fileSizeFormat(req.file.size, 2),
+        };
+      } catch (error) {
+        res.status(500);
+        throw new Error("upload image error");
+      }
+    }
+    const image = await User.findOneAndUpdate(
+      {_id: req.user._id},
+      {profilePicture: fileData.url},
+      {new: true}
+    )
+    res.status(200).json(image)
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
+const postImagePhoto = asyncHandler(async (req, res) => {
+  try {
+    let fileData = {};
+    if (req.file) {
+      let upload;
+      try {
+        upload = await cloudinary.uploader.upload(req.file.path, {
+          resource_type: "image",
+          folder: "image",
+        });
+        fileData = {
+          fileName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          url: upload.secure_url,
+          size: fileSizeFormat(req.file.size, 2),
+        };
+      } catch (error) {
+        res.status(500);
+        throw new Error("upload image error");
+      }
+    }
+    const image = await User.findOneAndUpdate(
+      {_id: req.user._id},
+      {photo: fileData.url},
+      {new: true}
+    )
+    res.status(200).json(image)
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
 module.exports = {
   userRegister,
   userLogin,
@@ -454,5 +525,7 @@ module.exports = {
   unFollowUser,
   searchUser,
   unAcceptNewFriend,
-  acceptNewFriend
+  acceptNewFriend,
+  postImageBackground,
+  postImagePhoto
 };

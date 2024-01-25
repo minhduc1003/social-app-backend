@@ -12,6 +12,7 @@ const postImage = asyncHandler(async (req, res) => {
   try {
     let fileData = {};
     if (req.file) {
+      console.log(req.file);
       let upload;
       try {
         upload = await cloudinary.uploader.upload(req.file.path, {
@@ -90,9 +91,19 @@ const likePost = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const findPost = await Post.findOne({ _id: id });
     if (!findPost.likes.includes(req.user._id)) {
-      findPost.updateOne({ $push: { likes: req.user._id } });
+      const updatedPost = await Post.findOneAndUpdate(
+        { _id: id },
+        { $push: { likes: req.user._id } },
+        { new: true }
+      );
+      res.status(200).json(updatedPost);
     } else {
-      findPost.updateOne({ $pull: { likes: req.user._id } });
+      const updatedPost = await Post.findOneAndUpdate(
+        { _id: id },
+        { $pull: { likes: req.user._id } },
+        { new: true }
+      );
+      res.status(200).json(updatedPost);
     }
   } catch (error) {
     res.status(500);
