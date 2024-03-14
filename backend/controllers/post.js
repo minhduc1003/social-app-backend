@@ -42,11 +42,13 @@ const postImage = asyncHandler(async (req, res) => {
 
 const postUpload = asyncHandler(async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text,share } = req.body;
     const { id } = req.params;
     const image = id && (await Image.findById(id));
     if (id) {
       await Post.create({ text, image: image.image, userId: req.user._id });
+    } else if(share){
+      await Post.create({ text, share: share, userId: req.user._id });
     } else {
       await Post.create({ text, userId: req.user._id });
     }
