@@ -26,6 +26,9 @@ const PostSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+    share:{
+      type: Object,
+    }
   },
   { timestamps: true }
 );

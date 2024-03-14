@@ -66,16 +66,6 @@ const postDelete = asyncHandler(async (req, res) => {
     throw new Error("network error");
   }
 });
-const getDashboardPost = asyncHandler(async (req, res) => {
-  try {
-    const { _id } = req.user;
-    const data = await Post.find({ userId: _id });
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500);
-    throw new Error("network error");
-  }
-});
 const getPost = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
@@ -86,6 +76,31 @@ const getPost = asyncHandler(async (req, res) => {
     throw new Error("network error");
   }
 });
+const getPostById = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await Post.find({ _id: id });
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
+const getPostIncludeFriend = asyncHandler(async (req, res) => {
+  try {
+    const { friend,_id } = req.user;
+    const userId = [];
+    userId.push(_id);
+    friend && friend.map(item=>{
+      userId.push(item.userId);
+    })
+    const data = await Post.find({ userId: {$in:userId} });
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+})
 const likePost = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
@@ -110,11 +125,43 @@ const likePost = asyncHandler(async (req, res) => {
     throw new Error("network error");
   }
 });
+const commentsPost = asyncHandler(async (req, res) => {
+  try {
+    const { id,text,user } = req.body;
+    const commentsPost = await Post.findOneAndUpdate(
+      { _id: id },
+      { $push: { comments: {
+        text:text,
+        user:user,
+        reply:[]
+      } } },
+      { new: true }
+    );
+    res.status(200).json(commentsPost);
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
+const sharePost = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const findPost = await Post.findById(id);
+     const rs = await Post.create({ share:findPost,userId: req.user._id  });
+    res.status(200).json(rs);
+  } catch (error) {
+    res.status(500);
+    throw new Error("network error");
+  }
+});
 module.exports = {
   postUpload,
   postDelete,
   getPost,
   likePost,
   postImage,
-  getDashboardPost,
+  getPostIncludeFriend,
+  commentsPost,
+  sharePost,
+  getPostById
 };

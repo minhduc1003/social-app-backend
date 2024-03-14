@@ -42,7 +42,9 @@ const userRegister = asyncHandler(async (req, res) => {
   const token = genrateToken(user._id);
   if (user) {
     res.status(201);
-    const { name, email, photo, bio, phone, permission } = user;
+    const {_id, name, email, photo, bio, phone, permission, friend,notification,
+      gender,
+      dayOfBirth} = user;
     res.cookie("token", token, {
       path: "/",
       httpOnly: false,
@@ -51,6 +53,7 @@ const userRegister = asyncHandler(async (req, res) => {
       secure: false,
     });
     res.json({
+      _id,
       name,
       email,
       photo,
@@ -58,6 +61,10 @@ const userRegister = asyncHandler(async (req, res) => {
       phone,
       permission,
       token,
+      friend,
+      notification,
+      gender,
+      dayOfBirth,
     });
   } else {
     res.status(500);
@@ -94,8 +101,11 @@ const userLogin = asyncHandler(async (req, res) => {
   });
   const passwordIsCorrect = await bcrypt.compare(password, user.password);
   if (user && passwordIsCorrect) {
-    const { name, email, photo, bio, phone, permission } = user;
+    const { _id,name, email, photo, bio, phone, permission, friend,notification,
+      gender,
+      dayOfBirth} = user;
     res.json({
+      _id,
       name,
       email,
       photo,
@@ -103,6 +113,10 @@ const userLogin = asyncHandler(async (req, res) => {
       phone,
       permission,
       token,
+      friend,
+      notification,
+      gender,
+      dayOfBirth,
     });
   } else {
     res.status(400);
@@ -172,7 +186,9 @@ const getAnotherUser = asyncHandler(async (req, res) => {
       friend,
       gender,
       dayOfBirth,
-      _id
+      _id,
+      location,
+      web,
     } = user;
     res.json({
       _id,
@@ -187,6 +203,8 @@ const getAnotherUser = asyncHandler(async (req, res) => {
       friend,
       gender,
       dayOfBirth,
+      location,
+      web,
     });
   } else {
     res.status(500);
@@ -207,9 +225,13 @@ const updateUser = asyncHandler(async (req, res) => {
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
   (user.photo = req.body.photo || user.photo),
-    (user.bio = req.body.bio || user.bio);
-  user.phone = req.body.phone || user.phone;
-  const { _id, name, email, photo, bio, phone, permission } = user;
+    (user.bio = req.body.bio );
+  user.phone = req.body.phone ;
+  user.dayOfBirth = req.body.dayOfBirth ;
+  (user.location = req.body.location ),
+    (user.web = req.body.web );
+  user.gender = req.body.gender ;
+  const { _id, name, email, photo, bio, phone, permission,dayOfBirth,location,web,gender } = user;
 
   await User.findByIdAndUpdate(_id, req.user, {
     new: true,
@@ -223,6 +245,10 @@ const updateUser = asyncHandler(async (req, res) => {
         bio,
         phone,
         permission,
+        dayOfBirth,
+        location,
+        web,
+        gender
       })
     )
     .catch((e) => {
@@ -502,6 +528,11 @@ const postImagePhoto = asyncHandler(async (req, res) => {
     const image = await User.findOneAndUpdate(
       {_id: req.user._id},
       {photo: fileData.url},
+      {new: true}
+    )
+     await User.findOneAndUpdate(
+      {'friend.userId':req.user._id.toString()},
+      { $set: { 'friend.$.image': fileData.url } },
       {new: true}
     )
     res.status(200).json(image)

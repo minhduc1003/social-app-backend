@@ -34,7 +34,7 @@ const userSchema = mongoose.Schema(
       default: [],
     },
     phone: {
-      type: Number,
+      type: String,
       default: "",
     },
     gender: {
@@ -43,6 +43,14 @@ const userSchema = mongoose.Schema(
     },
     dayOfBirth: {
       type: Date,
+      default: "",
+    },
+    location: {
+      type: String,
+      default: "",
+    },
+    web: {
+      type: String,
       default: "",
     },
     bio: {
