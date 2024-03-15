@@ -27,7 +27,7 @@ const userSchema = mongoose.Schema(
     },
     photo: {
       type: String,
-      default: "https://www.catholicjonesboro.com/files/images/sample-img.jpg",
+      default: "https://res.cloudinary.com/dbsywoofn/image/upload/v1710480152/image/zbs4msqpl0qqfpuhbfwh.jpg",
     },
     friend:{
       type: Array,
