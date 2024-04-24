@@ -10,9 +10,14 @@ const errorMidd = require("./middleWare/error");
 const postRouter = require("./routers/postRouter");
 const messageRouter = require("./routers/messageRouter");
 const app = express();
-const http = require('http');
-const { Server } = require('socket.io');
-const server = http.createServer(app);
+const fs = require("fs");
+const options = {
+  key: fs.readFileSync("./certificate/key.pem"),
+  cert: fs.readFileSync("./certificate/cert.pem"),
+};
+const https = require("https");
+const { Server } = require("socket.io");
+const server = https.createServer(options, app);
 const io = new Server(server);
 
 // global._io = io;
@@ -30,10 +35,9 @@ const removeUser = (socketId) => {
 const getUser = (userId) => {
   console.log(users);
   return users.find((user) => user.userId === userId);
-  
 };
 
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   // console.log(`a user connected id: ${socket.id}`);
   socket.on("addUser", (userId) => {
     addUser(userId, socket.id);
@@ -41,43 +45,46 @@ io.on('connection', (socket) => {
   });
 
   //send and get message
-  socket.on("send_message", ({ senderId, receiverId, text,conversationMember }) => {
-
-    const user = getUser(receiverId);
-    console.log(user);
-   if(user&&user.socketId){
-    io.to(user.socketId).emit("getMessage", {
-      senderId,
-      text,
-      conversationMember
-    });
-   }
-  });
-  socket.on('disconnect', () => {
+  socket.on(
+    "send_message",
+    ({ senderId, receiverId, text, conversationMember }) => {
+      const user = getUser(receiverId);
+      console.log(user);
+      if (user && user.socketId) {
+        io.to(user.socketId).emit("getMessage", {
+          senderId,
+          text,
+          conversationMember,
+        });
+      }
+    }
+  );
+  socket.on("disconnect", () => {
     removeUser(socket.id);
-    console.log('user disconnected');
+    console.log("user disconnected");
     io.emit("getUsers", users);
   });
 });
-app.use((req, res,next) => {
-  res.io=io;
+app.use((req, res, next) => {
+  res.io = io;
   next();
-})
+});
 app.use(express.json());
 app.use(cookieParser());
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use(express.urlencoded({ extended: false }));
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true, //access-control-allow-credentials:true
-    optionSuccessStatus: 200,
-  })
-);
+app.use(cors());
+app.options("*", (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Allow-Credentials", "true");
+  res.status(200).end();
+});
 app.use(bodyParser.json());
 app.use("/api/user", userRouter);
 app.use("/api/post", postRouter);
-app.use("/api/message",messageRouter);
+app.use("/api/message", messageRouter);
 
 const PORT = process.env.PORT || 5000;
 app.use(errorMidd);
