@@ -14,7 +14,9 @@ const fs = require("fs");
 const options = {
   key: fs.readFileSync("./certificate/key.pem"),
   cert: fs.readFileSync("./certificate/cert.pem"),
+  rejectUnauthorized: false,
 };
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 const https = require("https");
 const { Server } = require("socket.io");
 const server = https.createServer(options, app);
