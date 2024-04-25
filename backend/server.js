@@ -10,16 +10,9 @@ const errorMidd = require("./middleWare/error");
 const postRouter = require("./routers/postRouter");
 const messageRouter = require("./routers/messageRouter");
 const app = express();
-const fs = require("fs");
-const options = {
-  key: fs.readFileSync("./certificate/key.pem"),
-  cert: fs.readFileSync("./certificate/cert.pem"),
-  rejectUnauthorized: false,
-};
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-const https = require("https");
+const http = require("http");
 const { Server } = require("socket.io");
-const server = https.createServer(options, app);
+const server = http.createServer(app);
 const io = new Server(server);
 
 // global._io = io;
